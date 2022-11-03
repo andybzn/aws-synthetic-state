@@ -1,0 +1,17 @@
+[package]
+name = "aws_synthetic_state"
+version = "0.1.0"
+edition = "2021"
+authors = ["andy baizon <andrew.baizon@oneadvanced.com>"]
+description = "lambda function to return aws synthetic canary status"
+readme = "README.md"
+keywords = ["monitoring", "alerting", "status-page"]
+publish = false
+
+[dependencies]
+aws-config = "0.51.0"
+aws-sdk-synthetics = "0.21.0"
+lambda_runtime = "0.4"
+serde = "1"
+log = "0.4"
+tokio = { version = "1", features = ["full"] }

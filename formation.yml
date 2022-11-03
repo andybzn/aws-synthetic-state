@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Lambda Function to get Synthetic Canary Status
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ${AWS::AccountId}-platform-status
+
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: platformstatus-canary-get
+      Description: Return status for myworkplace-login canary.
+      Runtime: provided.al2
+      Handler: hello.handler
+      Code:
+        S3Bucket: !Ref S3Bucket.name
+        S3Key: bootstrap.zip
+      Role: 
+      Environment:
+        Variables:
+          canaryName: myworkplace-login
+          canaryRegion: eu-west-2
+
+  APIGateway:
+    Type: AWS::ApiGatewayV2::Api
