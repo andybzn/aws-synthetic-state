@@ -1,4 +1,4 @@
-# rust_aws_synthetics
+# aws synthetic state
 
 This package is used to check the last run status of an AWS CloudWatch Synthetic Canary, and will return an error if the last run was unsuccessful. The function is designed to be used in conjunction with API Gateway, and the Platform Status dashboard.
 
