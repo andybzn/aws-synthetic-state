@@ -3,7 +3,6 @@ use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_synthetics as synthetics;
 use lambda_runtime::{service_fn, LambdaEvent, Error};
 use serde_json::Value;
-//use std::panic;
 
 // main
 #[tokio::main]
@@ -31,8 +30,7 @@ async fn check_canary (_event: LambdaEvent<Value>) -> Result<(), Error> {
     let client = synthetics::Client::new(&shared_config);
 
     // pull the last canary run
-    let mut canary_names = Vec::new();
-    canary_names.push(String::from(canary));
+    let canary_names = vec![canary];
     let names: Option<Vec<String>> = Some(canary_names);
 
     let canary_runs = client
@@ -58,8 +56,8 @@ async fn check_canary (_event: LambdaEvent<Value>) -> Result<(), Error> {
 
     // this is a hacky bailout
     if state == "FAILED" {
-        println!("Bailing out");
-        panic!();
+        let error = String::from("CanaryFailed").into();
+        return Err(error);
     };
 
     // return ok
