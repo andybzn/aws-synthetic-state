@@ -15,10 +15,10 @@ Provide the canary name and region as lambda environment variables:
 
 ## Output
 
-| Canary State   | Output |
-|----------------|--------|
-| Run Successful | Ok     |
-| Run Failure    | Error  |
+| Canary State   | Output Response |
+|----------------|-----------------|
+| Run Successful | 200 (Ok)        |
+| Run Failure    | 404 (Error)     |
 
 ## Roles & Credentials
 
