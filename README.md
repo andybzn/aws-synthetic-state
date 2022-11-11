@@ -46,7 +46,7 @@ This lambda will require a role with the following Trust relationship, coupled w
 
 #### Policy
 
-This function requires the below synthetics access policy, in addition to the [AWSLambdaBasicExecutionRole](https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html)
+This function requires an access policy with `synthetics:Describe*`, in addition to the [AWSLambdaBasicExecutionRole](https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html)
 
 ```json
 {
@@ -54,11 +54,7 @@ This function requires the below synthetics access policy, in addition to the [A
     "Statement": [
         {
             "Effect": "Allow",
-            "Action": [
-                "synthetics:Describe*",
-                "synthetics:Get*",
-                "synthetics:List*"
-            ],
+            "Action": "synthetics:Describe*",
             "Resource": "*"
         }
     ]
