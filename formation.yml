@@ -23,5 +23,21 @@ Resources:
           canaryName: myworkplace-login
           canaryRegion: eu-west-2
 
-  APIGateway:
-    Type: AWS::ApiGatewayV2::Api
+  ApiGatewayApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: platformstatus
+
+  ApiGatewayMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ResourceId: !Ref ApiGatewayApi.RootResourceId
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: Lambda
+
+  ApiGatewayModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
