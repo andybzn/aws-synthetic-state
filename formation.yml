@@ -5,7 +5,7 @@ Parameters:
   ServiceName:
     Type: String
     Description: The name to deploy this service as.
-    AllowedPattern: [a-zA-Z0-9_-]
+    AllowedPattern: "[a-zA-Z0-9_-]"
     ConstraintDescription: "ServiceName must match the following pattern: [a-zA-Z0-9_-]. Spaces are not permitted."
   CanaryName:
     Type: String
@@ -63,7 +63,7 @@ Resources:
       Runtime: provided.al2
       Handler: index.handler
       Code:
-        S3Bucket: !Ref S3Bucket.name
+        S3Bucket: !Ref S3Bucket
         S3Key: bootstrap.zip
       Role: !Ref LambdaExecutionRole
       Environment:
@@ -100,7 +100,7 @@ Resources:
                 Action: logs:CreateLogGroup
                 Resource: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
               - Effect: Allow
-                Action: 
+                Action:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: !Sub
@@ -116,12 +116,12 @@ Resources:
     Type: AWS::ApiGateway::Method
     Properties:
       RestApiId: !Ref ApiGatewayApi
-      ResourceId: !Ref ApiGatewayApi.RootResourceId
+      ResourceId: !GetAtt ApiGatewayApi.RootResourceId
       HttpMethod: GET
       AuthorizationType: NONE
       Integration:
         Type: Lambda
-        Uri: !Ref LambdaFunction.arn
+        Uri: !GetAtt LambdaFunction.arn
       IntegrationResponse:
         - StatusCode: 200
           SelectionPattern: CanaryFailed*
