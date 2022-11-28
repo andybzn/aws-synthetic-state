@@ -1,32 +1,116 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Lambda Function to get Synthetic Canary Status
+Description: Service Infrastructure to get CloudWatch Synthetic Canary Status
+
+Parameters:
+  ServiceName:
+    Type: String
+    Description: The name to deploy this service as.
+    AllowedPattern: [a-zA-Z0-9_-]
+    ConstraintDescription: "ServiceName must match the following pattern: [a-zA-Z0-9_-]. Spaces are not permitted."
+  CanaryName:
+    Type: String
+    Description: The name of the target canary.
+  CanaryRegion:
+    Type: String
+    Description: The region tag for the target canary.
+    Default: eu-west-2
+    AllowedValues:
+      - af-south-1
+      - ap-east-1
+      - ap-northeast-1
+      - ap-northeast-2
+      - ap-northeast-3
+      - ap-south-1
+      - ap-south-2
+      - ap-southeast-1
+      - ap-southeast-2
+      - ap-southeast-3
+      - ca-central-1
+      - eu-central-1
+      - eu-central-2
+      - eu-north-1
+      - eu-south-1
+      - eu-south-2
+      - eu-west-1
+      -	eu-west-2
+      - eu-west-3
+      - me-central-1
+      - me-south-1
+      - sa-east-1
+      - us-east-1
+      - us-east-2
+      - us-west-1
+      - us-west-2
 
 Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: ${AWS::AccountId}-platform-status
+      BucketName: !Sub
+        - ${AWS::AccountId}-${Friendly}
+        - Friendly: !Ref ServiceName
 
   LambdaFunction:
+    DependsOn: S3Bucket
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: platformstatus-canary-get
-      Description: Return status for myworkplace-login canary.
+      FunctionName: !Sub
+        - ${Friendly}-canary-get
+        - Friendly: !Ref ServiceName
+      Description: !Sub
+        - Return status for the ${Canary} synthetic canary.
+        - Canary: !Ref CanaryName
       Runtime: provided.al2
-      Handler: hello.handler
+      Handler: index.handler
       Code:
         S3Bucket: !Ref S3Bucket.name
         S3Key: bootstrap.zip
-      Role: 
+      Role: !Ref LambdaExecutionRole
       Environment:
         Variables:
-          canaryName: myworkplace-login
-          canaryRegion: eu-west-2
+          canaryName: !Ref CanaryName
+          canaryRegion: !Ref CanaryRegion
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: CloudWatchSyntheticsDescribe
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: synthetics:Describe*
+                Resource: '*'
+        - PolicyName: BasicLambdaExecution
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+              - Effect: Allow
+                Action: 
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub
+                  - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${Lambda}:*
+                  - Lambda: !Ref LambdaFunction
 
   ApiGatewayApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
-      Name: platformstatus
+      Name: !Ref ServiceName
 
   ApiGatewayMethod:
     Type: AWS::ApiGateway::Method
@@ -37,7 +121,37 @@ Resources:
       AuthorizationType: NONE
       Integration:
         Type: Lambda
+        Uri: !Ref LambdaFunction.arn
+      IntegrationResponse:
+        - StatusCode: 200
+          SelectionPattern: CanaryFailed*
+        - StatusCode: 404
+      MethodResponse:
+        - StatusCode: 200
+          ResponseModels: !Ref ApiGatewayModel
+        - StatusCode: 404
 
   ApiGatewayModel:
     Type: AWS::ApiGateway::Model
     Properties:
+      RestApiId: !Ref ApiGatewayApi
+      ContentType: application/json
+      Schema: {}
+
+  ApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      StageName: V1
+      RestApiId: !Ref ApiGatewayApi
+
+  ApiDeployment:
+    DependsOn: ApiGatewayMethod
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref ApiGatewayApi
+      Description: Deploy service
+      StageName: !Ref ApiStage
+
+Outputs:
+  ServiceInvokeUrl:
+    Value: !Sub https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazon.aws.com/${ApiStage}
