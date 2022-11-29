@@ -60,3 +60,7 @@ This function requires an access policy with `synthetics:Describe*`, in addition
     ]
 }
 ```
+
+## CloudFormation
+
+A CloudFormation stack is provided in [formation.yml](https://https://github.com/andybzn/aws-synthetic-state/blob/main/formation.yml), which will provide the necessary infrastructure and roles.
