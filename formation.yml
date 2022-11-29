@@ -104,6 +104,9 @@ Resources:
     Type: AWS::ApiGateway::RestApi
     Properties:
       Name: !Ref ServiceName
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
 
   ApiGatewayMethod:
     DependsOn: ApiGatewayApi
@@ -114,8 +117,8 @@ Resources:
       HttpMethod: GET
       AuthorizationType: NONE
       Integration:
-        IntegrationHttpMethod: GET
-        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Type: AWS
         Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
         IntegrationResponses:
           - StatusCode: "200"
@@ -131,8 +134,17 @@ Resources:
     Properties:
       RestApiId: !Ref ApiGatewayApi
       Description: Deploy service
-      StageName: V1
+      StageName: v1
+
+  ApiInvokeLambda:
+    DependsOn: ApiGatewayApi
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt LambdaFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayApi}/*/*/*
 
 Outputs:
   ServiceInvokeUrl:
-    Value: !Sub https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazon.aws.com/V1
+    Value: !Sub https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/v1
