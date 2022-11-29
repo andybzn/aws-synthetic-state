@@ -5,8 +5,13 @@ Parameters:
   ServiceName:
     Type: String
     Description: The name to deploy this service as.
-    AllowedPattern: "[a-zA-Z0-9_-]"
+    AllowedPattern: "[a-zA-Z0-9_-]*"
     ConstraintDescription: "ServiceName must match the following pattern: [a-zA-Z0-9_-]. Spaces are not permitted."
+  S3Bucket:
+    Type: String
+    Description: The S3 Bucket containing the bootstrap.zip
+    AllowedPattern: "[a-z0-9\\.-]*"
+    ConstraintDescription: "S3Bucket must match the following pattern: [a-z0-9\\.-]. Spaces are not permitted."
   CanaryName:
     Type: String
     Description: The name of the target canary.
@@ -43,12 +48,8 @@ Parameters:
       - us-west-2
 
 Resources:
-  S3Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub ${AWS::AccountId}-${ServiceName}
-
   LambdaFunction:
+    DependsOn: LambdaExecutionRole
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${ServiceName}-canary-get
@@ -58,7 +59,7 @@ Resources:
       Code:
         S3Bucket: !Ref S3Bucket
         S3Key: bootstrap.zip
-      Role: !Ref LambdaExecutionRole
+      Role: !GetAtt LambdaExecutionRole.Arn
       Environment:
         Variables:
           canaryName: !Ref CanaryName
@@ -91,7 +92,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: logs:CreateLogGroup
-                Resource: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
               - Effect: Allow
                 Action:
                   - logs:CreateLogStream
@@ -99,6 +100,7 @@ Resources:
                 Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ServiceName}-canary-get:*
 
   ApiGatewayApi:
+    DependsOn: LambdaFunction
     Type: AWS::ApiGateway::RestApi
     Properties:
       Name: !Ref ServiceName
@@ -112,8 +114,9 @@ Resources:
       HttpMethod: GET
       AuthorizationType: NONE
       Integration:
-        Type: Lambda
-        Uri: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LambdaFunction}
+        IntegrationHttpMethod: GET
+        Type: AWS_PROXY
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
         IntegrationResponses:
           - StatusCode: "200"
           - StatusCode: "404"
@@ -122,20 +125,14 @@ Resources:
         - StatusCode: "200"
         - StatusCode: "404"
 
-  ApiStage:
-    Type: AWS::ApiGateway::Stage
-    Properties:
-      StageName: V1
-      RestApiId: !Ref ApiGatewayApi
-
   ApiDeployment:
     DependsOn: ApiGatewayMethod
     Type: AWS::ApiGateway::Deployment
     Properties:
       RestApiId: !Ref ApiGatewayApi
       Description: Deploy service
-      StageName: !Ref ApiStage
+      StageName: V1
 
 Outputs:
   ServiceInvokeUrl:
-    Value: !Sub https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazon.aws.com/${ApiStage}
+    Value: !Sub https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazon.aws.com/V1
