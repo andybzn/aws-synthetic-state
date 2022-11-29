@@ -46,20 +46,13 @@ Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub
-        - ${AWS::AccountId}-${Friendly}
-        - Friendly: !Ref ServiceName
+      BucketName: !Sub ${AWS::AccountId}-${ServiceName}
 
   LambdaFunction:
-    DependsOn: S3Bucket
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub
-        - ${Friendly}-canary-get
-        - Friendly: !Ref ServiceName
-      Description: !Sub
-        - Return status for the ${Canary} synthetic canary.
-        - Canary: !Ref CanaryName
+      FunctionName: !Sub ${ServiceName}-canary-get
+      Description: !Sub Return status for the ${CanaryName} synthetic canary
       Runtime: provided.al2
       Handler: index.handler
       Code:
@@ -82,7 +75,7 @@ Resources:
               Service:
                 - lambda.amazonaws.com
             Action:
-              - 'sts:AssumeRole'
+              - "sts:AssumeRole"
       Path: /
       Policies:
         - PolicyName: CloudWatchSyntheticsDescribe
@@ -91,7 +84,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: synthetics:Describe*
-                Resource: '*'
+                Resource: "*"
         - PolicyName: BasicLambdaExecution
           PolicyDocument:
             Version: "2012-10-17"
@@ -103,9 +96,7 @@ Resources:
                 Action:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub
-                  - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${Lambda}:*
-                  - Lambda: !Ref LambdaFunction
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ServiceName}-canary-get:*
 
   ApiGatewayApi:
     Type: AWS::ApiGateway::RestApi
@@ -113,6 +104,7 @@ Resources:
       Name: !Ref ServiceName
 
   ApiGatewayMethod:
+    DependsOn: ApiGatewayApi
     Type: AWS::ApiGateway::Method
     Properties:
       RestApiId: !Ref ApiGatewayApi
@@ -121,22 +113,14 @@ Resources:
       AuthorizationType: NONE
       Integration:
         Type: Lambda
-        Uri: !GetAtt LambdaFunction.arn
-      IntegrationResponse:
-        - StatusCode: 200
-          SelectionPattern: CanaryFailed*
-        - StatusCode: 404
-      MethodResponse:
-        - StatusCode: 200
-          ResponseModels: !Ref ApiGatewayModel
-        - StatusCode: 404
-
-  ApiGatewayModel:
-    Type: AWS::ApiGateway::Model
-    Properties:
-      RestApiId: !Ref ApiGatewayApi
-      ContentType: application/json
-      Schema: {}
+        Uri: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${LambdaFunction}
+        IntegrationResponses:
+          - StatusCode: "200"
+          - StatusCode: "404"
+            SelectionPattern: CanaryFailed*
+      MethodResponses:
+        - StatusCode: "200"
+        - StatusCode: "404"
 
   ApiStage:
     Type: AWS::ApiGateway::Stage
