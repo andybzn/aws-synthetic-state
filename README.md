@@ -4,8 +4,6 @@ This package is used to check the last run status of an AWS CloudWatch Synthetic
 
 Platform Status tracks graphs via an API call, and in order to complete the graph, it must receive a specified response code. By returning `Ok` or `Error`, API Gateway will return either a successful code or a failure code.
 
----
-
 ## Usage
 
 Provide the canary name and region as lambda environment variables:
@@ -14,8 +12,6 @@ Provide the canary name and region as lambda environment variables:
 |---------------|--------|
 | canaryName    | String |
 | canaryRegion  | String |  
-
----
 
 ## Output
 
@@ -44,8 +40,6 @@ To deploy the CloudFormation stack, load the `formation.yml` file, and provide t
 ![Parameters](docs/images/parameters.png)
 
 Once the parameters have been entered, the stack can be deployed as is, or modified as desired.
-
----
 
 ## Additional Information
 
@@ -89,4 +83,3 @@ This function requires an access policy with `synthetics:Describe*`, in addition
     ]
 }
 ```
-
