@@ -20,8 +20,6 @@ Provide the canary name and region as lambda environment variables:
 | Run Successful | 200 (Ok)        |
 | Run Failure    | 404 (Error)     |
 
----
-
 ## Deployment
 
 For deployment, a CloudFormation stack is provided in [formation.yml](https://https://github.com/andybzn/aws-synthetic-state/blob/main/formation.yml), which will provide the necessary infrastructure and roles.
