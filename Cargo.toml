@@ -1,6 +1,6 @@
 [package]
 name = "aws_synthetic_state"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 authors = ["andy baizon <andrew.baizon@oneadvanced.com>"]
 description = "lambda function to return aws synthetic canary status"
