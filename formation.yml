@@ -55,6 +55,8 @@ Resources:
       FunctionName: !Sub ${ServiceName}-canary-get
       Description: !Sub Return status for the ${CanaryName} synthetic canary
       Runtime: provided.al2
+      Architectures: 
+        - arm64
       Handler: index.handler
       Code:
         S3Bucket: !Ref S3Bucket
