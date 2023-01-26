@@ -39,9 +39,18 @@ async fn check_canary (_event: LambdaEvent<Value>) -> Result<(), Error> {
         .send()
         .await?;
 
-    // parse the canary run to get the raw status as a string
+    // parse the canary runs into a vec
     let canary_run = canary_runs.canaries_last_run().unwrap();
-    let run = &canary_run.to_vec()[0];
+    let run_vec = &canary_run.to_vec();
+
+    // handle 'No Run Data'
+    if run_vec.is_empty() {
+        let err = String::from("CanaryFailed-NoRunData").into();
+        return Err(err);
+    }
+
+    // handle a successful run
+    let run = &run_vec[0];
     let state = run
         .last_run()
         .unwrap()
